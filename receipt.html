@@ -20,19 +20,14 @@
         box-shadow: 0 2px 15px rgba(0,0,0,0.2);
         overflow: hidden;
     }
+    h1, h2, h3 { margin: 0; }
     .company-info { text-align: center; margin-bottom: 30px; white-space: pre-wrap; }
     .info-table, .items-table, .totals-table {
         width: 100%;
         border-collapse: collapse;
     }
-    .info-table td, .items-table th, .items-table td {
-        padding: 8px;
-        border: 1px solid #ddd;
-    }
-    .items-table th {
-        background: #1b263b;
-        color: white;
-    }
+    .info-table td, .items-table th, .items-table td, .totals-table td { padding: 8px; border: 1px solid #ddd; }
+    .items-table th { background: #1b263b; color: white; }
     .totals-table { width: 50%; float: right; }
     .totals-table td { border: none; padding: 5px 10px; }
     .totals-table tr td:first-child { text-align: right; font-weight: bold; }
@@ -45,146 +40,142 @@
         background:#1b263b;
         color:white;
         border-radius:8px;
+        text-align:center;
+        text-decoration:none;
         font-weight:bold;
-        border:none;
         cursor:pointer;
+        transition: background 0.25s;
     }
+    .btn:hover { background:#0d1b2a; }
 </style>
 </head>
 <body>
 
-<div class="receipt-container">
+<script>
+    // ✅ CHECK LOGIN
+    const user = localStorage.getItem('loggedInUser');
+    if (!user) {
+        alert('You must be logged in to view the receipt.');
+        window.location.href = 'login.html';
+    }
+</script>
 
+<div class="receipt-container" id="receiptContainer">
     <div class="company-info" id="companyInfo"></div>
 
-    <table class="info-table" id="infoTable"></table>
+    <div class="info">
+        <table class="info-table" id="infoTable"></table>
+    </div>
 
-    <table class="items-table">
-        <thead>
-            <tr>
-                <th>QTY</th>
-                <th>DESCRIPTION</th>
-                <th>UNIT PRICE</th>
-                <th>AMOUNT</th>
-            </tr>
-        </thead>
-        <tbody id="itemsBody"></tbody>
-    </table>
+    <div class="items">
+        <table class="items-table">
+            <thead>
+                <tr>
+                    <th>QTY</th>
+                    <th>DESCRIPTION</th>
+                    <th>UNIT PRICE</th>
+                    <th>AMOUNT</th>
+                </tr>
+            </thead>
+            <tbody id="itemsBody"></tbody>
+        </table>
+    </div>
 
-    <table class="totals-table" id="totalsTable"></table>
-    <div class="clear"></div>
+    <div class="totals">
+        <table class="totals-table" id="totalsTable"></table>
+        <div class="clear"></div>
+    </div>
 
     <button class="btn" onclick="newOrder()">Start New Order</button>
-    <button class="btn" onclick="window.print()">Print Receipt</button>
-
+    <button class="btn" onclick="printReceipt()">Print Receipt</button>
 </div>
 
 <script>
-/* =======================
-   LOGIN CHECK
-======================= */
-const user = localStorage.getItem("loggedInUser");
-if (!user) {
-    alert("You must be logged in.");
-    window.location.href = "login.html";
-}
+    // ✅ LOAD USER INFO PER LOGGED-IN USER
+    const userInfo = JSON.parse(localStorage.getItem("userInfo_" + user)) || {};
 
-/* =======================
-   ✅ CORRECT USER STORAGE
-======================= */
-const userKey = `userInfo_${user}`;
-const userInfo = JSON.parse(localStorage.getItem(userKey));
+    const cart = JSON.parse(localStorage.getItem("cart")) || [];
 
-if (!userInfo || !userInfo.address) {
-    alert("Please complete your profile first.");
-    window.location.href = "user.html";
-}
+    const today = new Date();
+    const lastInvoice = parseInt(localStorage.getItem("lastInvoice") || "0") + 1;
+    localStorage.setItem("lastInvoice", lastInvoice);
+    const invoiceNumber = lastInvoice.toString().padStart(8, "0");
+    const posNumber = "US-001";
 
-/* =======================
-   USER CART
-======================= */
-const cartKey = `cart_${user}`;
-const cart = JSON.parse(localStorage.getItem(cartKey)) || [];
+    const billName = userInfo.fullname || user;
+    const billAddress = userInfo.address || 'No address saved';
+    const shipName = userInfo.fullname || user;
+    const shipAddress = userInfo.address || 'No address saved';
 
-/* =======================
-   RECEIPT META
-======================= */
-const today = new Date();
-const invoice = parseInt(localStorage.getItem("lastInvoice") || "0") + 1;
-localStorage.setItem("lastInvoice", invoice);
-const invoiceNumber = invoice.toString().padStart(8, "0");
+    let subtotal = 0;
+    const itemRows = cart.length > 0 ? cart : [
+        { qty: 2, name: "Front and rear brake cables", price: 100 },
+        { qty: 3, name: "Now set of potalam", price: 10 }
+    ];
+    itemRows.forEach(item => subtotal += item.qty * item.price);
 
-/* =======================
-   TOTALS
-======================= */
-let subtotal = 0;
-cart.forEach(i => subtotal += i.qty * i.price);
-const tax = subtotal * 0.0025;
-const total = subtotal + tax;
+    const taxRate = 0.0025;
+    const taxAmount = subtotal * taxRate;
+    const totalAmount = subtotal + taxAmount;
 
-/* =======================
-   TYPE EFFECT
-======================= */
-async function typeText(el, text, delay=20){
-    el.textContent="";
-    for(let c of text){
-        el.textContent+=c;
-        await new Promise(r=>setTimeout(r,delay));
-    }
-}
-
-/* =======================
-   BUILD RECEIPT
-======================= */
-async function buildReceipt(){
-
-    await typeText(
-        document.getElementById("companyInfo"),
-        `PistolsZone\nPrecision. Reliability. Performance.\nRECEIPT\n\n`, 25
-    );
-
-    document.getElementById("infoTable").innerHTML = `
-        <tr>
-            <td><b>Bill To:</b><br>${userInfo.fullname}<br>${userInfo.address}</td>
-            <td><b>Ship To:</b><br>${userInfo.fullname}<br>${userInfo.address}</td>
-        </tr>
-        <tr>
-            <td><b>Receipt Date:</b> ${today.toLocaleDateString()}</td>
-            <td><b>Invoice #:</b> ${invoiceNumber}</td>
-        </tr>
-    `;
-
-    const body = document.getElementById("itemsBody");
-    body.innerHTML = "";
-
-    for (let item of cart) {
-        const amount = item.qty * item.price;
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-            <td>${item.qty}</td>
-            <td>${item.name}</td>
-            <td>₱${item.price.toFixed(2)}</td>
-            <td>₱${amount.toFixed(2)}</td>
-        `;
-        body.appendChild(tr);
+    async function typeText(element, text, delay = 20){
+        element.textContent = "";
+        for(let i=0;i<text.length;i++){
+            element.textContent += text[i];
+            await new Promise(r => setTimeout(r, delay));
+        }
     }
 
-    document.getElementById("totalsTable").innerHTML = `
-        <tr><td>Subtotal:</td><td>₱${subtotal.toFixed(2)}</td></tr>
-        <tr><td>Sales Tax 0.25%:</td><td>₱${tax.toFixed(2)}</td></tr>
-        <tr><td>Total:</td><td>₱${total.toFixed(2)}</td></tr>
-    `;
-}
+    async function animateReceipt(){
+        const companyInfo = document.getElementById("companyInfo");
+        await typeText(companyInfo, `PistolsZone\nPrecision. Reliability. Performance.\nRECEIPT\n\n`, 25);
 
-/* =======================
-   NEW ORDER
-======================= */
-function newOrder(){
-    localStorage.removeItem(cartKey);
-    window.location.href = "pistols.html";
-}
+        const infoTable = document.getElementById("infoTable");
+        const infoRows = [
+            `<tr><td><b>Bill To:</b><br>${billName}<br>${billAddress}</td><td><b>Ship To:</b><br>${shipName}<br>${shipAddress}</td></tr>`,
+            `<tr><td><b>Receipt Date:</b> ${today.toLocaleDateString()}</td><td><b>POS:</b> ${posNumber}</td></tr>`,
+            `<tr><td><b>Due Date:</b> ${today.toLocaleDateString()}</td><td><b>Invoice #:</b> ${invoiceNumber}</td></tr>`
+        ];
+        for(const row of infoRows){
+            const tr = document.createElement("tr");
+            tr.innerHTML = row;
+            infoTable.appendChild(tr);
+            await new Promise(r => setTimeout(r, 150));
+        }
 
-buildReceipt();
+        const itemsBody = document.getElementById("itemsBody");
+        for(const item of itemRows){
+            const tr = document.createElement("tr");
+            const amount = item.qty * item.price;
+            tr.innerHTML = `<td>${item.qty}</td><td>${item.name}</td><td>₱${item.price.toLocaleString()}</td><td>₱${amount.toLocaleString()}</td>`;
+            itemsBody.appendChild(tr);
+            await new Promise(r => setTimeout(r, 150));
+        }
+
+        const totalsTable = document.getElementById("totalsTable");
+        const totalsRows = [
+            `<tr><td>Subtotal:</td><td>₱${subtotal.toLocaleString(undefined, {minimumFractionDigits:2})}</td></tr>`,
+            `<tr><td>Sales Tax (0.25%):</td><td>₱${taxAmount.toLocaleString(undefined, {minimumFractionDigits:2})}</td></tr>`,
+            `<tr><td>Total:</td><td>₱${totalAmount.toLocaleString(undefined, {minimumFractionDigits:2})}</td></tr>`
+        ];
+        for(const row of totalsRows){
+            const tr = document.createElement("tr");
+            tr.innerHTML = row;
+            totalsTable.appendChild(tr);
+            await new Promise(r => setTimeout(r, 150));
+        }
+    }
+
+    function newOrder(){
+        localStorage.removeItem("cart");
+        window.location.href = 'pistols.html';
+    }
+
+    function printReceipt(){
+        window.print();
+    }
+
+    window.onload = animateReceipt;
 </script>
 
 </body>
