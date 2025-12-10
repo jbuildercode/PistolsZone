@@ -1,9 +1,13 @@
+// cart.js - User-specific cart
+const user = localStorage.getItem('loggedInUser');
+if (!user) window.location.href = 'login.html';
+
 // Load cart from localStorage or create empty cart
-let cart = JSON.parse(localStorage.getItem("cart")) || [];
+let cart = JSON.parse(localStorage.getItem("cart_" + user)) || [];
 
 // Save cart function
 function saveCart() {
-    localStorage.setItem("cart", JSON.stringify(cart));
+    localStorage.setItem("cart_" + user, JSON.stringify(cart));
     updateCartCount(); // update cart icon/count automatically
 }
 
