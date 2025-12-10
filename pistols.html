@@ -65,7 +65,6 @@
         color: #778da9;
     }
 
-    /* User badge circle */
     .user-badge {
         display: inline-flex;
         align-items: center;
@@ -174,15 +173,24 @@
     const user = localStorage.getItem('loggedInUser');
     if (!user) window.location.href = 'login.html';
 
+    function getUserCart() {
+        return JSON.parse(localStorage.getItem("cart_" + user)) || [];
+    }
+
+    function saveUserCart(cart) {
+        localStorage.setItem("cart_" + user, JSON.stringify(cart));
+        updateCartCount();
+    }
+
     function updateCartCount() {
-        let cart = JSON.parse(localStorage.getItem("cart")) || [];
-        let totalItems = cart.reduce((sum, item) => sum + item.qty, 0);
+        const cart = getUserCart();
+        const totalItems = cart.reduce((sum, item) => sum + item.qty, 0);
         const countSpan = document.getElementById("cart-count");
         if (countSpan) countSpan.textContent = totalItems;
     }
 
     function addToCart(button, name, price) {
-        let cart = JSON.parse(localStorage.getItem("cart")) || [];
+        const cart = getUserCart();
         const idx = cart.findIndex(i => i.name === name);
 
         if (idx > -1) {
@@ -191,8 +199,7 @@
             cart.push({ name, price, qty: 1 });
         }
 
-        localStorage.setItem("cart", JSON.stringify(cart));
-        updateCartCount();
+        saveUserCart(cart);
 
         if (button && button.classList) {
             button.classList.add("added");
@@ -240,7 +247,6 @@
     window.onload = () => {
         updateCartCount();
 
-        // Display welcome message
         const welcomeMsg = document.getElementById('welcome-msg');
         if (user && welcomeMsg) welcomeMsg.textContent = `Welcome, ${user}!`;
 
