@@ -26,7 +26,10 @@
         width: 100%;
         border-collapse: collapse;
     }
-    .info-table td, .items-table th, .items-table td, .totals-table td { padding: 8px; border: 1px solid #ddd; }
+    .info-table td, .items-table th, .items-table td, .totals-table td { 
+        padding: 8px; 
+        border: 1px solid #ddd; 
+    }
     .items-table th { background: #1b263b; color: white; }
     .totals-table { width: 50%; float: right; }
     .totals-table td { border: none; padding: 5px 10px; }
@@ -45,21 +48,15 @@
         font-weight:bold;
         cursor:pointer;
         transition: background 0.25s;
+        border: none;
     }
     .btn:hover { background:#0d1b2a; }
 </style>
 </head>
 <body>
 
-<script>
-    const user = localStorage.getItem('loggedInUser');
-    if (!user) {
-        alert('You must be logged in to view the receipt.');
-        window.location.href = 'login.html';
-    }
-</script>
+<div class="receipt-container">
 
-<div class="receipt-container" id="receiptContainer">
     <div class="company-info" id="companyInfo"></div>
 
     <div class="info">
@@ -87,39 +84,66 @@
 
     <button class="btn" onclick="newOrder()">Start New Order</button>
     <button class="btn" onclick="printReceipt()">Print Receipt</button>
+
 </div>
 
 <script>
-const userInfo = JSON.parse(localStorage.getItem("userInfo")) || {};
-const cart = JSON.parse(localStorage.getItem("cart")) || [];
+/* =======================
+   AUTH CHECK
+======================= */
+const loggedInUser = localStorage.getItem("loggedInUser");
+if (!loggedInUser) {
+    alert("You must be logged in to view the receipt.");
+    window.location.href = "login.html";
+}
 
-// Receipt metadata
+/* =======================
+   LOAD USER DATA
+======================= */
+const allUsers = JSON.parse(localStorage.getItem("users")) || {};
+const userInfo = allUsers[loggedInUser];
+
+if (!userInfo || !userInfo.address) {
+    alert("Your account has no address saved.");
+    window.location.href = "profile.html";
+}
+
+/* =======================
+   LOAD CART PER USER
+======================= */
+const cartKey = `cart_${loggedInUser}`;
+const cart = JSON.parse(localStorage.getItem(cartKey)) || [];
+
+/* =======================
+   RECEIPT META
+======================= */
 const today = new Date();
 const lastInvoice = parseInt(localStorage.getItem("lastInvoice") || "0") + 1;
 localStorage.setItem("lastInvoice", lastInvoice);
 const invoiceNumber = lastInvoice.toString().padStart(8, "0");
 const posNumber = "US-001";
 
-// Bill To / Ship To
-const billName = userInfo.fullname || user;
-const billAddress = userInfo.address || "Guest Address";
-const shipName = userInfo.fullname || user;
-const shipAddress = userInfo.address || "Guest Address";
+/* =======================
+   BILL & SHIP
+======================= */
+const billName = userInfo.fullname;
+const billAddress = userInfo.address;
+const shipName = userInfo.fullname;
+const shipAddress = userInfo.address;
 
-// Items
+/* =======================
+   TOTALS
+======================= */
 let subtotal = 0;
-const itemRows = cart.length > 0 ? cart : [
-    { qty: 2, name: "Front and rear brake cables", price: 100 },
-    { qty: 3, name: "Now set of potalam", price: 10 }
-];
-itemRows.forEach(item => subtotal += item.qty * item.price);
+cart.forEach(item => subtotal += item.qty * item.price);
 
-// Sales tax
 const taxRate = 0.0025;
 const taxAmount = subtotal * taxRate;
 const totalAmount = subtotal + taxAmount;
 
-// Typing effect helper
+/* =======================
+   TYPE EFFECT
+======================= */
 async function typeText(element, text, delay = 20){
     element.textContent = "";
     for(let i=0;i<text.length;i++){
@@ -128,59 +152,65 @@ async function typeText(element, text, delay = 20){
     }
 }
 
-// Animate receipt
+/* =======================
+   ANIMATE RECEIPT
+======================= */
 async function animateReceipt(){
     const companyInfo = document.getElementById("companyInfo");
     await typeText(companyInfo, `PistolsZone\nPrecision. Reliability. Performance.\nRECEIPT\n\n`, 25);
 
     const infoTable = document.getElementById("infoTable");
-    const infoRows = [
-        `<tr><td><b>Bill To:</b><br>${billName}<br>${billAddress}</td><td><b>Ship To:</b><br>${shipName}<br>${shipAddress}</td></tr>`,
-        `<tr><td><b>Receipt Date:</b> ${today.toLocaleDateString()}</td><td><b>POS:</b> ${posNumber}</td></tr>`,
-        `<tr><td><b>Due Date:</b> ${today.toLocaleDateString()}</td><td><b>Invoice #:</b> ${invoiceNumber}</td></tr>`
-    ];
-    for(const row of infoRows){
-        const tr = document.createElement("tr");
-        tr.innerHTML = row;
-        infoTable.appendChild(tr);
-        await new Promise(r => setTimeout(r, 150));
-    }
+    infoTable.innerHTML = `
+        <tr>
+            <td><b>Bill To:</b><br>${billName}<br>${billAddress}</td>
+            <td><b>Ship To:</b><br>${shipName}<br>${shipAddress}</td>
+        </tr>
+        <tr>
+            <td><b>Receipt Date:</b> ${today.toLocaleDateString()}</td>
+            <td><b>POS:</b> ${posNumber}</td>
+        </tr>
+        <tr>
+            <td><b>Due Date:</b> ${today.toLocaleDateString()}</td>
+            <td><b>Invoice #:</b> ${invoiceNumber}</td>
+        </tr>
+    `;
 
     const itemsBody = document.getElementById("itemsBody");
-    for(const item of itemRows){
+    itemsBody.innerHTML = "";
+
+    for(const item of cart){
         const tr = document.createElement("tr");
         const amount = item.qty * item.price;
-        tr.innerHTML = `<td>${item.qty}</td><td>${item.name}</td><td>₱${item.price.toLocaleString()}</td><td>₱${amount.toLocaleString()}</td>`;
+        tr.innerHTML = `
+            <td>${item.qty}</td>
+            <td>${item.name}</td>
+            <td>₱${item.price.toLocaleString()}</td>
+            <td>₱${amount.toLocaleString()}</td>
+        `;
         itemsBody.appendChild(tr);
-        await new Promise(r => setTimeout(r, 150));
+        await new Promise(r => setTimeout(r, 120));
     }
 
     const totalsTable = document.getElementById("totalsTable");
-    const totalsRows = [
-        `<tr><td>Subtotal:</td><td>₱${subtotal.toLocaleString(undefined, {minimumFractionDigits:2})}</td></tr>`,
-        `<tr><td>Sales Tax (0.25%):</td><td>₱${taxAmount.toLocaleString(undefined, {minimumFractionDigits:2})}</td></tr>`,
-        `<tr><td>Total:</td><td>₱${totalAmount.toLocaleString(undefined, {minimumFractionDigits:2})}</td></tr>`
-    ];
-    for(const row of totalsRows){
-        const tr = document.createElement("tr");
-        tr.innerHTML = row;
-        totalsTable.appendChild(tr);
-        await new Promise(r => setTimeout(r, 150));
-    }
+    totalsTable.innerHTML = `
+        <tr><td>Subtotal:</td><td>₱${subtotal.toFixed(2)}</td></tr>
+        <tr><td>Sales Tax (0.25%):</td><td>₱${taxAmount.toFixed(2)}</td></tr>
+        <tr><td>Total:</td><td>₱${totalAmount.toFixed(2)}</td></tr>
+    `;
 }
 
-// Start new order
+/* =======================
+   BUTTONS
+======================= */
 function newOrder(){
-    localStorage.removeItem("cart");
-    window.location.href = 'pistols.html';
+    localStorage.removeItem(cartKey);
+    window.location.href = "pistols.html";
 }
 
-// Print receipt
 function printReceipt(){
     window.print();
 }
 
-// Run animation on load
 window.onload = animateReceipt;
 </script>
 
