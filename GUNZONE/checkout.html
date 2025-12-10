@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Checkout - PistolsZone</title>
+
+<style>
+    body {
+        background: #e5e5e5;
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .box {
+        width: 90%;
+        max-width: 480px;
+        background: #ffffff;
+        padding: 30px;
+        border-radius: 12px;
+        box-shadow: 0 3px 15px rgba(0, 0, 0, 0.15);
+        opacity: 0;
+        transform: translateY(20px);
+        animation: fadeInUp 0.5s ease forwards;
+    }
+
+    @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+
+    h2 {
+        margin-bottom: 10px;
+        color: #1b263b;
+        text-align: center;
+        opacity: 0;
+        animation: fadeInText 0.5s ease 0.2s forwards;
+    }
+
+    p {
+        text-align:center; 
+        color:#444;
+        opacity: 0;
+        animation: fadeInText 0.5s ease 0.3s forwards;
+    }
+
+    label {
+        font-size: 0.9rem;
+        font-weight: bold;
+        margin-top: 12px;
+        display: block;
+        color: #333;
+        opacity: 0;
+        animation: fadeInText 0.5s ease 0.4s forwards;
+    }
+
+    select {
+        width: 100%;
+        padding: 12px;
+        margin: 8px 0 16px 0;
+        border-radius: 8px;
+        border: 1px solid #bbb;
+        font-size: 1rem;
+        transition: border-color 0.25s, transform 0.2s;
+        background: #fff;
+        cursor: pointer;
+        opacity: 0;
+        animation: fadeInText 0.5s ease 0.5s forwards;
+    }
+
+    select:focus {
+        border-color: #1b263b;
+        outline: none;
+    }
+
+    button {
+        width: 100%;
+        padding: 14px;
+        margin-top: 10px;
+        background: #1b263b;
+        color: white;
+        font-size: 1rem;
+        font-weight: bold;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: background 0.25s, transform 0.2s;
+        opacity: 0;
+        animation: fadeInText 0.5s ease 0.6s forwards;
+    }
+
+    button:hover {
+        background: #0d1b2a;
+        transform: scale(1.03);
+    }
+
+    @keyframes fadeInText {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
+
+<script>
+    function submitOrder() {
+        const paymentMethod = document.getElementById("paymentMethod").value;
+
+        if (!paymentMethod) {
+            alert("Please select a payment method.");
+            return;
+        }
+
+        localStorage.setItem("paymentMethod", paymentMethod);
+        window.location.href = "receipt.html";
+    }
+</script>
+</head>
+
+<body>
+
+    <div class="box">
+        <h2>Checkout</h2>
+        <p>Select your payment method:</p>
+
+        <label for="paymentMethod">Payment Method</label>
+        <select id="paymentMethod">
+            <option value="" disabled selected>Select a payment method</option>
+            <option value="PayPal">PayPal</option>
+            <option value="Bank Transfer">Bank Transfer</option>
+            <option value="Visa">Visa</option>
+            <option value="Cash">Cash</option>
+        </select>
+
+        <button onclick="submitOrder()">Complete Order</button>
+    </div>
+
+</body>
+</html>

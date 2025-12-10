@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login - PistolsZone</title>
+<style>
+    /* Full-page background */
+    body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background: url('gunzonephoto.jpg') no-repeat center center/cover;
+        color: #fff;
+        position: relative;
+        overflow: hidden;
+    }
+
+    /* Dark overlay for readability */
+    body::before {
+        content: "";
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background-color: rgba(0,0,0,0.6);
+        z-index: 0;
+    }
+
+    /* Fade-in animation */
+    @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(30px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .container {
+        position: relative;
+        z-index: 1;
+        background: rgba(13,27,42,0.5); /* semi-transparent dark background */
+        color: #fff;
+        padding: 40px 30px;
+        border-radius: 12px;
+        box-shadow: 0 4px 30px rgba(0,0,0,0.5);
+        width: 350px;
+        text-align: center;
+        backdrop-filter: blur(6px);
+        animation: fadeInUp 0.8s ease forwards;
+    }
+
+    .container h1, .container h3, .container h2 {
+        opacity: 0;
+        animation: fadeInUp 1s ease forwards;
+    }
+
+    .container h1 { animation-delay: 0.2s; font-size: 2rem; font-weight: 700; margin: 0; }
+    .container h3 { animation-delay: 0.4s; margin: 5px 0 20px; font-weight: 400; color: #ccc; font-size: 1rem; }
+    .container h2 { animation-delay: 0.6s; margin-bottom: 20px; font-size: 1.3rem; font-weight: 600; color: #ddd; }
+
+    input {
+        width: 100%;
+        padding: 10px;
+        margin: 10px 0;
+        box-sizing: border-box;
+        border: 1px solid #555;
+        border-radius: 6px;
+        background: rgba(255,255,255,0.1);
+        color: #fff;
+    }
+
+    input::placeholder { color: #ddd; }
+
+    button {
+        width: 100%;
+        padding: 12px;
+        background: #0d1b2a;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        margin-top: 10px;
+        font-size: 1rem;
+        transition: 0.3s;
+    }
+
+    button:hover { background: #1b263b; }
+
+    p {
+        text-align: center;
+        font-size: 0.9rem;
+        margin-top: 15px;
+        color: #ccc;
+    }
+
+    .switch {
+        color: #4da6ff;
+        cursor: pointer;
+        text-decoration: underline;
+    }
+
+    @media(max-width: 400px){
+        .container { width: 90%; padding: 30px 20px; }
+    }
+</style>
+</head>
+<body>
+
+<div class="container">
+    <h1>PistolsZone</h1>
+    <h3>Precision. Reliability. Performance.</h3>
+    <h2>Your Trusted Source for Premium Pistols</h2>
+
+    <input type="text" id="username" placeholder="Username">
+    <input type="password" id="password" placeholder="Password">
+    <button id="action-btn">Login</button>
+    <p id="switch-text">Don't have an account? <span class="switch" id="switch-form">Sign Up</span></p>
+</div>
+
+<script>
+    const usernameInput = document.getElementById('username');
+    const passwordInput = document.getElementById('password');
+    const actionBtn = document.getElementById('action-btn');
+    const switchForm = document.getElementById('switch-form');
+    const switchText = document.getElementById('switch-text');
+
+    let isLogin = true;
+
+    function saveUser(username, password) {
+        localStorage.setItem('user_' + username, password);
+    }
+
+    function checkUser(username, password) {
+        const storedPassword = localStorage.getItem('user_' + username);
+        return storedPassword === password;
+    }
+
+    function toggleForm() {
+        isLogin = !isLogin;
+        if (isLogin) {
+            actionBtn.textContent = 'Login';
+            switchText.innerHTML = 'Don\'t have an account? <span class="switch" id="switch-form">Sign Up</span>';
+        } else {
+            actionBtn.textContent = 'Sign Up';
+            switchText.innerHTML = 'Already have an account? <span class="switch" id="switch-form">Login</span>';
+        }
+        document.getElementById('switch-form').addEventListener('click', toggleForm);
+    }
+
+    actionBtn.addEventListener('click', () => {
+        const username = usernameInput.value.trim();
+        const password = passwordInput.value.trim();
+
+        if (!username || !password) {
+            alert('Please fill in both fields.');
+            return;
+        }
+
+        if (isLogin) {
+            if (checkUser(username, password)) {
+                localStorage.setItem('loggedInUser', username);
+                window.location.href = 'index.html';
+            } else {
+                alert('Invalid username or password.');
+            }
+        } else {
+            if (localStorage.getItem('user_' + username)) {
+                alert('Username already exists.');
+            } else {
+                saveUser(username, password);
+                localStorage.setItem('loggedInUser', username); // auto login
+                window.location.href = 'index.html'; // redirect directly
+            }
+        }
+    });
+
+    switchForm.addEventListener('click', toggleForm);
+</script>
+
+</body>
+</html>

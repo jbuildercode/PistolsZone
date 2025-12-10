@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Receipt - PistolsZone</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background: #e5e5e5;
+        margin: 0;
+        padding: 0;
+    }
+    .receipt-container {
+        max-width: 800px;
+        margin: 40px auto;
+        background: #fff;
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 2px 15px rgba(0,0,0,0.2);
+        overflow: hidden;
+    }
+    h1, h2, h3 { margin: 0; }
+    .company-info { text-align: center; margin-bottom: 30px; white-space: pre-wrap; }
+    .info-table, .items-table, .totals-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    .info-table td, .items-table th, .items-table td, .totals-table td { padding: 8px; border: 1px solid #ddd; }
+    .items-table th { background: #1b263b; color: white; }
+    .totals-table { width: 50%; float: right; }
+    .totals-table td { border: none; padding: 5px 10px; }
+    .totals-table tr td:first-child { text-align: right; font-weight: bold; }
+    .clear { clear: both; }
+    .btn {
+        display:block;
+        width:200px;
+        padding:12px;
+        margin:20px auto 0 auto;
+        background:#1b263b;
+        color:white;
+        border-radius:8px;
+        text-align:center;
+        text-decoration:none;
+        font-weight:bold;
+        cursor:pointer;
+        transition: background 0.25s;
+    }
+    .btn:hover { background:#0d1b2a; }
+</style>
+</head>
+<body>
+
+<script>
+    const user = localStorage.getItem('loggedInUser');
+    if (!user) {
+        alert('You must be logged in to view the receipt.');
+        window.location.href = 'login.html';
+    }
+</script>
+
+<div class="receipt-container" id="receiptContainer">
+    <div class="company-info" id="companyInfo"></div>
+
+    <div class="info">
+        <table class="info-table" id="infoTable"></table>
+    </div>
+
+    <div class="items">
+        <table class="items-table">
+            <thead>
+                <tr>
+                    <th>QTY</th>
+                    <th>DESCRIPTION</th>
+                    <th>UNIT PRICE</th>
+                    <th>AMOUNT</th>
+                </tr>
+            </thead>
+            <tbody id="itemsBody"></tbody>
+        </table>
+    </div>
+
+    <div class="totals">
+        <table class="totals-table" id="totalsTable"></table>
+        <div class="clear"></div>
+    </div>
+
+    <button class="btn" onclick="newOrder()">Start New Order</button>
+    <button class="btn" onclick="printReceipt()">Print Receipt</button>
+</div>
+
+<script>
+const userInfo = JSON.parse(localStorage.getItem("userInfo")) || {};
+const cart = JSON.parse(localStorage.getItem("cart")) || [];
+
+// Receipt metadata
+const today = new Date();
+const lastInvoice = parseInt(localStorage.getItem("lastInvoice") || "0") + 1;
+localStorage.setItem("lastInvoice", lastInvoice);
+const invoiceNumber = lastInvoice.toString().padStart(8, "0");
+const posNumber = "US-001";
+
+// Bill To / Ship To
+const billName = userInfo.fullname || user;
+const billAddress = userInfo.address || "Guest Address";
+const shipName = userInfo.fullname || user;
+const shipAddress = userInfo.address || "Guest Address";
+
+// Items
+let subtotal = 0;
+const itemRows = cart.length > 0 ? cart : [
+    { qty: 2, name: "Front and rear brake cables", price: 100 },
+    { qty: 3, name: "Now set of potalam", price: 10 }
+];
+itemRows.forEach(item => subtotal += item.qty * item.price);
+
+// Sales tax
+const taxRate = 0.0025;
+const taxAmount = subtotal * taxRate;
+const totalAmount = subtotal + taxAmount;
+
+// Typing effect helper
+async function typeText(element, text, delay = 20){
+    element.textContent = "";
+    for(let i=0;i<text.length;i++){
+        element.textContent += text[i];
+        await new Promise(r => setTimeout(r, delay));
+    }
+}
+
+// Animate receipt
+async function animateReceipt(){
+    const companyInfo = document.getElementById("companyInfo");
+    await typeText(companyInfo, `PistolsZone\nPrecision. Reliability. Performance.\nRECEIPT\n\n`, 25);
+
+    const infoTable = document.getElementById("infoTable");
+    const infoRows = [
+        `<tr><td><b>Bill To:</b><br>${billName}<br>${billAddress}</td><td><b>Ship To:</b><br>${shipName}<br>${shipAddress}</td></tr>`,
+        `<tr><td><b>Receipt Date:</b> ${today.toLocaleDateString()}</td><td><b>POS:</b> ${posNumber}</td></tr>`,
+        `<tr><td><b>Due Date:</b> ${today.toLocaleDateString()}</td><td><b>Invoice #:</b> ${invoiceNumber}</td></tr>`
+    ];
+    for(const row of infoRows){
+        const tr = document.createElement("tr");
+        tr.innerHTML = row;
+        infoTable.appendChild(tr);
+        await new Promise(r => setTimeout(r, 150));
+    }
+
+    const itemsBody = document.getElementById("itemsBody");
+    for(const item of itemRows){
+        const tr = document.createElement("tr");
+        const amount = item.qty * item.price;
+        tr.innerHTML = `<td>${item.qty}</td><td>${item.name}</td><td>₱${item.price.toLocaleString()}</td><td>₱${amount.toLocaleString()}</td>`;
+        itemsBody.appendChild(tr);
+        await new Promise(r => setTimeout(r, 150));
+    }
+
+    const totalsTable = document.getElementById("totalsTable");
+    const totalsRows = [
+        `<tr><td>Subtotal:</td><td>₱${subtotal.toLocaleString(undefined, {minimumFractionDigits:2})}</td></tr>`,
+        `<tr><td>Sales Tax (0.25%):</td><td>₱${taxAmount.toLocaleString(undefined, {minimumFractionDigits:2})}</td></tr>`,
+        `<tr><td>Total:</td><td>₱${totalAmount.toLocaleString(undefined, {minimumFractionDigits:2})}</td></tr>`
+    ];
+    for(const row of totalsRows){
+        const tr = document.createElement("tr");
+        tr.innerHTML = row;
+        totalsTable.appendChild(tr);
+        await new Promise(r => setTimeout(r, 150));
+    }
+}
+
+// Start new order
+function newOrder(){
+    localStorage.removeItem("cart");
+    window.location.href = 'pistols.html';
+}
+
+// Print receipt
+function printReceipt(){
+    window.print();
+}
+
+// Run animation on load
+window.onload = animateReceipt;
+</script>
+
+</body>
+</html>
