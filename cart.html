@@ -58,7 +58,6 @@
         color: #778da9;
     }
 
-    /* User badge circle */
     .user-badge {
         display: inline-flex;
         align-items: center;
@@ -159,7 +158,6 @@
         margin-top: 20px;
     }
 
-    /* Animations */
     @keyframes fadeDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
     @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
     @keyframes slideIn { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
@@ -198,20 +196,78 @@
     </button>
 </div>
 
-<script src="cart.js"></script>
-
 <script>
-function updateCartCount() {
-    const cart = JSON.parse(localStorage.getItem("cart")) || [];
-    const totalItems = cart.reduce((sum, item) => sum + item.qty, 0);
-    const countSpan = document.getElementById("cart-count");
-    if (countSpan) countSpan.textContent = totalItems;
+function getUserCart() {
+    return JSON.parse(localStorage.getItem("cart_" + user)) || [];
 }
 
-function setupNav() {
-    const nav = document.querySelector("nav");
+function saveUserCart(cart) {
+    localStorage.setItem("cart_" + user, JSON.stringify(cart));
+}
 
-    // Logout
+function updateCartCount() {
+    const cart = getUserCart();
+    document.getElementById("cart-count").textContent = cart.reduce((sum, item) => sum + item.qty, 0);
+}
+
+function renderCart() {
+    const cart = getUserCart();
+    const cartItemsDiv = document.getElementById("cart-items");
+    cartItemsDiv.innerHTML = "";
+    let total = 0;
+
+    if (cart.length === 0) {
+        cartItemsDiv.innerHTML = "<p>Your cart is empty.</p>";
+        document.getElementById("total").textContent = "0";
+        return;
+    }
+
+    cart.forEach((item, index) => {
+        const itemDiv = document.createElement("div");
+        itemDiv.className = "cart-item";
+        const amount = item.qty * item.price;
+        total += amount;
+
+        itemDiv.innerHTML = `
+            <span>${item.name} (₱${item.price} each)</span>
+            <span>
+                <button class="qty-btn" onclick="changeQty(${index}, -1)">-</button>
+                ${item.qty}
+                <button class="qty-btn" onclick="changeQty(${index}, 1)">+</button>
+                <button class="remove-btn" onclick="removeItem(${index})">Remove</button>
+            </span>
+            <span>₱${amount}</span>
+        `;
+        cartItemsDiv.appendChild(itemDiv);
+    });
+
+    document.getElementById("total").textContent = total;
+}
+
+function changeQty(index, delta) {
+    const cart = getUserCart();
+    cart[index].qty += delta;
+    if (cart[index].qty < 1) cart[index].qty = 1;
+    saveUserCart(cart);
+    renderCart();
+    updateCartCount();
+}
+
+function removeItem(index) {
+    const cart = getUserCart();
+    cart.splice(index, 1);
+    saveUserCart(cart);
+    renderCart();
+    updateCartCount();
+}
+
+window.onload = () => {
+    document.getElementById('welcome-msg').textContent = `Welcome, ${user}!`;
+    updateCartCount();
+    renderCart();
+
+    // Setup logout link
+    const nav = document.querySelector("nav");
     const logoutBtn = document.createElement('a');
     logoutBtn.href = "#";
     logoutBtn.textContent = "Logout";
@@ -221,7 +277,7 @@ function setupNav() {
     });
     nav.appendChild(logoutBtn);
 
-    // User badge
+    // Setup user badge
     const badgeLink = document.createElement('a');
     badgeLink.href = 'user.html';
     badgeLink.title = 'View Profile';
@@ -229,29 +285,15 @@ function setupNav() {
 
     const badge = document.createElement('span');
     badge.className = 'user-badge';
-
     const circle = document.createElement('div');
     circle.className = 'user-circle';
     circle.textContent = user[0].toUpperCase();
-
     const nameText = document.createElement('span');
     nameText.textContent = user;
-
     badge.appendChild(circle);
     badge.appendChild(nameText);
     badgeLink.appendChild(badge);
-
     nav.appendChild(badgeLink);
-}
-
-window.onload = () => {
-    updateCartCount();
-    setupNav();
-    if (typeof loadCartPage === 'function') loadCartPage();
-
-    // Welcome message
-    const welcomeMsg = document.getElementById('welcome-msg');
-    if (user && welcomeMsg) welcomeMsg.textContent = `Welcome, ${user}!`;
 
     // Checkout button
     document.getElementById("checkout-btn").addEventListener("click", function () {
