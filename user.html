@@ -208,15 +208,15 @@
 </footer>
 
 <script>
+    const userKey = "userInfo_" + user;
+
     // ✅ CART COUNT
     const cart = JSON.parse(localStorage.getItem("cart")) || [];
     const totalItems = cart.reduce((sum, item) => sum + item.qty, 0);
     document.getElementById('cart-count').textContent = totalItems;
 
     // ✅ LOAD PROFILE PER USER
-    const storedInfo = JSON.parse(
-        localStorage.getItem("userInfo_" + user)
-    ) || {};
+    const storedInfo = JSON.parse(localStorage.getItem(userKey)) || {};
 
     document.getElementById('input-fullname').value = storedInfo.fullname || '';
     document.getElementById('input-email').value = storedInfo.email || `${user}@example.com`;
@@ -228,23 +228,23 @@
     document.getElementById('profile-initial').textContent =
         (storedInfo.fullname || user)[0].toUpperCase();
 
-    // ✅ SAVE PROFILE
+    // ✅ SAVE PROFILE PER USER
     document.getElementById('save-btn').addEventListener('click', () => {
         const info = {
-            fullname: document.getElementById('input-fullname').value,
-            email: document.getElementById('input-email').value,
-            address: document.getElementById('input-address').value,
-            phone: document.getElementById('input-phone').value
+            fullname: document.getElementById('input-fullname').value.trim(),
+            email: document.getElementById('input-email').value.trim(),
+            address: document.getElementById('input-address').value.trim(),
+            phone: document.getElementById('input-phone').value.trim()
         };
 
-        localStorage.setItem("userInfo_" + user, JSON.stringify(info));
+        localStorage.setItem(userKey, JSON.stringify(info));
 
         document.getElementById('profile-name').textContent = info.fullname || user;
         document.getElementById('profile-email').textContent = info.email || `${user}@example.com`;
         document.getElementById('profile-initial').textContent =
             (info.fullname || user)[0].toUpperCase();
 
-        alert("Profile saved successfully");
+        alert("Profile saved successfully ✅");
     });
 
     // ✅ LOGOUT
